@@ -8,7 +8,6 @@ class Std(Enum):
     STANDARDIZED = 1
     NON_STANDARDIZED = 2
 
-
 class Dataset:
     def __init__(self, url):
         self.url = url
@@ -43,8 +42,7 @@ class Dataset:
         self.data.columns = column_names
 
         # Map creditability to binary
-        self.data["creditability"] = self.data["creditability"].map({
-                                                                    1: 0, 2: 1})
+        self.data["creditability"] = self.data["creditability"].map({1: 0, 2: 1})
 
         # Convert categorical data to dummies
         self.data = pd.get_dummies(self.data, drop_first=True)
@@ -54,43 +52,32 @@ class Dataset:
         self.y = self.data["creditability"]
 
     def preprocess_adult(self):
-        # Add column names
+        # Rename the columns
         column_names = [
-            "age",
-            "workclass",
-            "fnlwgt",
-            "education",
-            "education-num",
-            "marital-status",
-            "occupation",
-            "relationship",
-            "race",
-            "sex",
-            "capital-gain",
-            "capital-loss",
-            "hours-per-week",
-            "native-country",
-            "income",
+            "age", "workclass", "fnlwgt", "education", "education-num", "marital-status",
+            "occupation", "relationship", "race", "sex", "capital-gain", "capital-loss",
+            "hours-per-week", "native-country", "income"
         ]
         self.data.columns = column_names
 
-        # rename columns
-        self.data = self.data.rename(columns=dict([
-            (str(i), e) for i, e in enumerate(column_names)
-            ]))
+        # Replace '?' with NaN and then drop rows with NaN values.
+        self.data.replace(' ?', np.nan, inplace=True)
+        self.data.dropna(inplace=True)
 
-        # Drop columns with NaN values
-        self.data = self.data.dropna(axis=1)
+        # Check unique values in 'income' for any unexpected values
+        # Check unique values in 'income' for any unexpected values
+        self.data['income'] = self.data['income'].map({'<=50K': 0, '>50K': 1})
 
-        # Convert categorical data to dummies
-        self.data = pd.get_dummies(self.data, drop_first=True)
+        # Encode categorical variables using one-hot encoding
+        categorical_cols = [
+            "workclass", "education", "marital-status", "occupation",
+            "relationship", "race", "sex", "native-country"
+        ]
+        self.data = pd.get_dummies(self.data, columns=categorical_cols, drop_first=True)
 
-        # Fill missing values with the column mean
-        self.data.fillna(self.data.mean(), inplace=True)
-
-        # Set target & features
-        self.y = self.data["income_>50K"]
-        self.X = self.data.drop(columns="income_>50K")
+        # Assign target & feature variables
+        self.X = self.data.drop("income", axis=1)
+        self.y = self.data["income"]
 
     def preprocess_communities_and_crime(self):
         # Read data into dataframe
@@ -98,19 +85,17 @@ class Dataset:
                                 header=None, na_values=["?"])
         # Read column names
         with urlopen("http://archive.ics.uci.edu/ml/machine-learning-databases/communities/communities.names") as names:
-            columns = [line.split(b' ')[1].decode("utf-8")
-                       for line in names if line.startswith(b'@attribute')]
+            columns = [line.split(b' ')[1].decode("utf-8") for line in names if line.startswith(b'@attribute')]
         self.data.columns = columns
 
         # Drop columns with NaN values
         self.data = self.data.dropna(axis=1)
 
-        # Exclude first 3 columns (you had `iloc[:, 3:]`, which means you're excluding them)
+        # Exclude first 3 columns
         self.data = self.data.iloc[:, 3:]
 
         # Drop non-predictive fields
-        non_predictive = ['state', 'county',
-                          'community', 'communityname', 'fold']
+        non_predictive = ['state', 'county', 'community', 'communityname', 'fold']
         self.data.drop(columns=non_predictive, inplace=True, errors='ignore')
 
         # Fill missing values with the column mean
@@ -124,9 +109,3 @@ class Dataset:
         # Set target & features
         self.y = self.data['ViolentCrimesPerPop']
         self.X = self.data.drop(columns='ViolentCrimesPerPop')
-
-
-if __name__ == '__main__':
-    d = Dataset(
-        "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data")
-    print(d.data)
