@@ -4,11 +4,13 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score
 import dataset
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+from sklearn.metrics import accuracy_score, recall_score, precision_score
+
 
 class BaseModelPipeline:
     def __init__(self, data_url, model, test_size=0.2, random_state=42):
@@ -28,6 +30,9 @@ class BaseModelPipeline:
         self.scaler = StandardScaler()
 
     def load_and_preprocess_data(self):
+        """
+            Load each data set & preprocess
+        """
         ds = dataset.Dataset(self.data_url)
         ds.preprocess()
         self.data = ds.data
@@ -35,9 +40,14 @@ class BaseModelPipeline:
         self.y = ds.y
 
     def split_data(self):
+        """
+            Split the data set into train & test sets
+        """
+
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y,
                                                                                 test_size=self.test_size,
                                                                                 random_state=self.random_state)
+        self.X_test_indices = self.X_test.index                  # Save original indices of X_test so it doesn't print scaled results
         self.X_train = self.scaler.fit_transform(self.X_train)
         self.X_test = self.scaler.transform(self.X_test)
 
@@ -49,38 +59,81 @@ class BaseModelPipeline:
         self.y_pred_test = self.model.predict(self.X_test)
 
     def evaluate_model(self):
+        """
+            Evaluate model performance
+        """
         train_accuracy = accuracy_score(self.y_train, self.y_pred_train)
         test_accuracy = accuracy_score(self.y_test, self.y_pred_test)
-        return train_accuracy, test_accuracy
+        train_recall = recall_score(self.y_train, self.y_pred_train)
+        test_recall = recall_score(self.y_test, self.y_pred_test)
+        train_precision = precision_score(self.y_train, self.y_pred_train)
+        test_precision = precision_score(self.y_test, self.y_pred_test)
+        train_f1_score = f1_score(self.y_train, self.y_pred_train)
+        test_f1_score = f1_score(self.y_test, self.y_pred_test)
+        return {
+            'Train Accuracy': train_accuracy,
+            'Train Recall': train_recall,
+            'Train Precision': train_precision,
+            'Train F1 Score': train_f1_score,
+            'Test Accuracy': test_accuracy,
+            'Test Recall': test_recall,
+            'Test Precision': test_precision,
+            'Test F1 Score': test_f1_score
+        }
 
     def run_pipeline(self):
+        """
+            Execute pipeline on preprocessed data
+        """
         self.load_and_preprocess_data()
         self.split_data()
         self.train_model()
         self.make_predictions()
-        train_acc, test_acc = self.evaluate_model()
-        print(f"Training Accuracy: {train_acc * 100:.2f}%")
-        print(f"Test Accuracy: {test_acc * 100:.2f}%")
+        metrics = self.evaluate_model()
+        for metric_name, metric_value in metrics.items():
+            print(f"{metric_name}: {metric_value * 100:.2f}%")
 
     def save_predictions_to_csv(self, filename):
-        df = pd.DataFrame({
-            'True_Labels': self.y_test,
-            'Predicted_Labels': self.y_pred_test
-        })
+        """
+            Save predictions against actual data in a CSV
+        """
 
-        df.to_csv(filename, index=False)
-        print(f"Predictions saved to {filename}")
+        # Use the stored indices to extract the corresponding rows frm the original dataset
+        X_test_original_df = self.data.loc[self.X_test_indices].reset_index(drop=True)
+
+        # Drop duplicates
+        X_test_original_df = X_test_original_df.drop(columns=["target_column_name"], errors='ignore')
+
+        # concat the original data, predictions, and true labels
+        result_df = pd.concat([
+            X_test_original_df,
+            pd.Series(self.y_pred_test, name="Predicted_Labels"),
+            pd.Series(self.y_test, name="True_Labels").reset_index(drop=True)
+        ], axis=1)
+
+        result_df.to_csv(filename, index=False)
 
 
 class RandomForestPipeline(BaseModelPipeline):
     def __init__(self, data_url, test_size=0.2, random_state=42):
-        super().__init__(data_url, RandomForestClassifier(), test_size, random_state)
-
+        super().__init__(
+            data_url,
+            RandomForestClassifier(
+                n_estimators=100,   # Ensures sufficient number of trees
+                max_depth=6,        # Decreased from 10
+                min_samples_split=7, # Increased from 5
+                min_samples_leaf=7,  # Increased from 4
+                max_features="sqrt", # Consider sqrt(number of features) for each split
+                oob_score=True,
+                random_state=random_state
+            ),
+            test_size,
+            random_state
+        )
 
 class SVMPipeline(BaseModelPipeline):
-    def __init__(self, data_url, test_size=0.2, random_state=42):
-        super().__init__(data_url, SVC(), test_size, random_state)
-
+    def __init__(self, data_url, C=0.5, test_size=0.2, random_state=42):
+        super().__init__(data_url, SVC(C=C), test_size, random_state)
 
 class LogisticPipeline(BaseModelPipeline):
     def __init__(self, data_url, test_size=0.2, random_state=42):
