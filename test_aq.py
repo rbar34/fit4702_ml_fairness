@@ -1,33 +1,31 @@
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import OneHotEncoder
 from aequitas.group import Group
+from aequitas.preprocessing import preprocess_input_df
+from glob import glob
 
-df = pd.read_csv("compas.csv")
-test = (df[-200:]).copy()
+# IMPORTANT: Run harness.py first to generate csv test results
+DIR_PATH = r'./*.csv'
+test_results = glob(DIR_PATH)
 
-# pre-processing
-encoder = OneHotEncoder(handle_unknown='ignore')
-new_x = encoder.fit_transform(df.iloc[:, :-1])
+for test_result in test_results:
+    print(test_result)
+    df = pd.read_csv(test_result)
 
-# Random forest
-rf = RandomForestClassifier(n_estimators=10)
-rf = rf.fit(new_x[:-200], df['two_year_recid'][:-200])
+    # rename columns to work properly with AEQUITAS
+    df.rename(columns={'Predicted_Labels': 'score',
+              'True_Labels': 'label_value'}, inplace=True)
 
-# predictions
-rf_predict = rf.predict(new_x[-200:])
-scores = pd.Series(rf_predict)
+    # preprocess for AEQUITAS
+    df, _ = preprocess_input_df(df)
 
-# rename
-test.reset_index(inplace=True)
-test['score'] = scores
-test.rename(columns={'two_year_recid': 'label_value'}, inplace=True)
+    # compute group metrics
+    g = Group()
+    xtab, _ = g.get_crosstabs(df)
+    absolute_metrics = g.list_absolute_metrics(xtab)
 
-test_aq = test.loc[:, ["race", "label_value", "score"]]
+    absolute_metrics_per_population_group = xtab[[
+        'attribute_name', 'attribute_value'] + absolute_metrics].round(2)
 
-g = Group()
-xtab, _ = g.get_crosstabs(test_aq)
-absolute_metrics = g.list_absolute_metrics(xtab)
-
-# print(xtab[[col for col in xtab.columns if col not in absolute_metrics]])
-print(xtab[['attribute_name', 'attribute_value'] + absolute_metrics].round(2))
+    # TODO: save results to csv in a separate file
+    # TODO: integrate this into the harness
+    print(absolute_metrics_per_population_group)
