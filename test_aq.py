@@ -2,14 +2,17 @@ import pandas as pd
 from aequitas.group import Group
 from aequitas.preprocessing import preprocess_input_df
 from glob import glob
+from pathlib import Path
+from joblib import dump
 
 # IMPORTANT: Run harness.py first to generate csv test results
-DIR_PATH = r'./*.csv'
-test_results = glob(DIR_PATH)
+DIR_PATH = r'./predictions/*.csv'
+prediction_files = glob(DIR_PATH)
 
-for test_result in test_results:
-    print(test_result)
-    df = pd.read_csv(test_result)
+for prediction_file in prediction_files:
+    print(prediction_file)
+
+    df = pd.read_csv(prediction_file)
 
     # rename columns to work properly with AEQUITAS
     df.rename(columns={'Predicted_Labels': 'score',
@@ -26,6 +29,10 @@ for test_result in test_results:
     absolute_metrics_per_population_group = xtab[[
         'attribute_name', 'attribute_value'] + absolute_metrics].round(2)
 
-    # TODO: save results to csv in a separate file
     # TODO: integrate this into the harness
+    pathname = f"./aequitas/{prediction_file.split('/')[-1]}"
+    filepath = Path(pathname)
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+
+    absolute_metrics_per_population_group.to_csv(filepath, index=False)
     print(absolute_metrics_per_population_group)

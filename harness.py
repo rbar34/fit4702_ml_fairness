@@ -24,5 +24,8 @@ for pipeline_name, PipelineClass in pipelines.items():
         print(f"\nProcessing {dataset_name} with {pipeline_name}")
         pipeline = PipelineClass(dataset_url)
         pipeline.run_pipeline()
-        filename = f"{dataset_name}_{pipeline_name}.csv".replace(" ", "_").lower()
-        pipeline.save_predictions_to_csv(filename)
+        predictions_filename = f"./predictions/{dataset_name}_{pipeline_name}.csv".replace(" ", "_").lower()
+        pipeline.save_predictions_to_csv(predictions_filename)
+
+        model_filename = f"./models/{dataset_name}_{pipeline_name}.joblib".replace(" ", "_").lower()
+        pipeline.save_model(model_filename)
