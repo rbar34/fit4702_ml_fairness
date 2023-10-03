@@ -27,5 +27,5 @@ for pipeline_name, PipelineClass in pipelines.items():
         predictions_filename = f"./predictions/{dataset_name}_{pipeline_name}.csv".replace(" ", "_").lower()
         pipeline.save_predictions_to_csv(predictions_filename)
 
-        model_filename = f"./models/{dataset_name}_{pipeline_name}.joblib".replace(" ", "_").lower()
+        model_filename = f"./models/{dataset_name}_{pipeline_name}".replace(" ", "_").lower()
         pipeline.save_model(model_filename)
