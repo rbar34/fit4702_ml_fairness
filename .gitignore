@@ -3,4 +3,5 @@ __pycache__/
 aequitas/
 models/
 predictions/
+generated_tests/
 .idea

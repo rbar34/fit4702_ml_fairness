@@ -17,10 +17,21 @@ class RandomTestMethod:
         self.model = None
         self.sensitive_attribute = sensitive_attribute
         self.target_variable = target_variable
+        self.failed_cases = []
 
     def load_prediction_model_pair(self):
         self.model = load(self.model_file_path)
         self.predictions = pd.read_csv(self.predictions_file_path)
+
+    def save_failed_cases_to_csv(self, filename):
+        result_df = pd.DataFrame(self.failed_cases)
+
+        # ensure directory exists
+        filepath = Path(filename)
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+
+        # write to file
+        result_df.to_csv(filepath, index=False)
 
     def random_test(self, data_frame, sensitive_attribute, target_variable, model, metric, threshold):
         tests_ran, tests_failed = 0, 0
@@ -30,6 +41,8 @@ class RandomTestMethod:
 
             if (not metric(individual_a, individual_b, target_variable)):
                 tests_failed += 1
+                # record failed cases
+                self.failed_cases += [individual_a, individual_b]
             tests_ran += 1
         return tests_failed
 
