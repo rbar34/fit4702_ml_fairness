@@ -101,12 +101,14 @@ class BaseModelPipeline:
             Serialise model and save to filesystem
         """
 
+        model_wrapper = ModelWrapper(self.model)
+
         # ensure directory exists
         filepath = Path(filename)
         filepath.parent.mkdir(parents=True, exist_ok=True)
 
         # write to file
-        dump(self.model, filepath)
+        dump(model_wrapper, filepath)
 
     def save_predictions_to_csv(self, filename):
         """
@@ -192,3 +194,27 @@ class NeuralNetworkPipeline(BaseModelPipeline):
             self.X_train).flatten() > 0.5).astype(int)
         self.y_pred_test = (self.model.predict(
             self.X_test).flatten() > 0.5).astype(int)
+
+    def save_model(self, filename):
+
+        model_wrapper = NNModelWrapper(self.model)
+
+        # ensure directory exists
+        filepath = Path(filename)
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+
+        # write to file
+        dump(model_wrapper, filepath)
+
+
+class ModelWrapper:
+    def __init__(self, model):
+        self.model = model
+
+    def predict_wrapper(self, X):
+        return self.model.predict(X)
+
+
+class NNModelWrapper(ModelWrapper):
+    def predict_wrapper(self, X):
+        return (self.model.predict(X).flatten() > 0.5).astype(int)

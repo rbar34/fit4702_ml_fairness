@@ -3,10 +3,16 @@ from aequitas.group import Group
 from aequitas.preprocessing import preprocess_input_df
 from glob import glob
 from pathlib import Path
-from joblib import dump
 
 # IMPORTANT: Run harness.py first to generate csv test results
-DIR_PATH = r'./predictions/*.csv'
+
+# TODO: write some loop to handle both paths
+PATHS = {
+        
+        }
+
+# DIR_PATH = r'./predictions/*.csv'
+DIR_PATH = r'./generated_tests/*.csv'
 prediction_files = glob(DIR_PATH)
 
 for prediction_file in prediction_files:
@@ -30,7 +36,8 @@ for prediction_file in prediction_files:
         'attribute_name', 'attribute_value'] + absolute_metrics].round(2)
 
     # TODO: integrate this into the harness
-    pathname = f"./aequitas/{prediction_file.split('/')[-1]}"
+    pathname = f"./random_generated_group_fairness/{prediction_file.split('/')[-1]}"
+    # pathname = f"./aequitas/{prediction_file.split('/')[-1]}"
     filepath = Path(pathname)
     filepath.parent.mkdir(parents=True, exist_ok=True)
 

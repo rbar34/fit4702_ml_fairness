@@ -5,7 +5,7 @@ from pathlib import Path
 
 MODEL_DIRECTORY = r'models/'
 PREDICTION_DIRECTORY = r'predictions/'
-TESTS_TO_RUN = 100
+TESTS_TO_RUN = 1000
 
 
 class RandomTestMethod:
@@ -56,7 +56,7 @@ class RandomTestMethod:
         test_b = individual_b.iloc[:-2]
         test_b = np.asarray(test_b).astype('float32')
         test_b = np.reshape(test_b, (1, -1))
-        individual_b[target_variable] = self.model.predict(test_b)
+        individual_b[target_variable] = self.model.predict_wrapper(test_b)
         return individual_a, individual_b
 
     def fairness_through_awareness(individual_a, individual_b, target_variable):
