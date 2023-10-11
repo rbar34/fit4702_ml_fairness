@@ -3,32 +3,32 @@ import numpy as np
 from urllib.request import urlopen
 from sklearn.feature_selection import chi2
 from sklearn.preprocessing import LabelEncoder
+from imblearn.over_sampling import SMOTE
 
 class Dataset:
     def __init__(self, url):
         self.url = url
-        self.data = self.load_data()
-        self.original_data = self.data.copy()
+        self.data = None
         self.X = None
         self.y = None
 
-    def load_data(self):
-        # Load the dataset from the URL
-        data = pd.read_csv(self.url, header=None, delim_whitespace=True)
-        return data
 
     def preprocess(self):
-        if 'german.data' in self.url:  # Updated the URL snippet check
+        if 'german.data' in self.url:  #
             self.preprocess_german_credit()
-        elif 'adult.data' in self.url:  # Placeholder for the adult dataset URL
+        elif 'adult.data' in self.url:
             self.preprocess_adult()
-        elif 'communities.data' in self.url:  # Placeholder for the communities and crime dataset URL
-            self.preprocess_communities_and_crime()
+        elif 'compas' in self.url:
+            self.preprocess_compass()
         else:
             raise ValueError("BAD URL")
 
     def preprocess_german_credit(self):
-        # Add column names
+        # Load data
+        self.data = pd.read_csv(self.url, header=None, delim_whitespace=True)
+        self.data = self.data.map(lambda x: x.strip() if isinstance(x, str) else x)
+
+        # Rename the columns
         column_names = [
             "checking_status", "duration", "credit_history", "purpose", "credit_amount",
             "savings_status", "employment_duration", "installment_rate", "personal_status_sex",
@@ -37,21 +37,33 @@ class Dataset:
         ]
         self.data.columns = column_names
 
-        # Map creditability to binary
+        # Check unique values in 'creditability' for any unexpected values
         self.data["creditability"] = self.data["creditability"].map({1: 1, 2: 0})
 
-        # Convert categorical data to dummies
-        self.data = pd.get_dummies(self.data, drop_first=True)
+        # Encode categorical variables using one-hot encoding
+        categorical_cols = [
+            "checking_status", "credit_history", "purpose", "savings_status",
+            "employment_duration", "personal_status_sex", "other_debtors",
+            "property", "other_installment_plans", "housing", "job", "phone", "foreign_worker"
+        ]
+        self.data = pd.get_dummies(self.data, columns=categorical_cols, drop_first=True)
 
         # Assign target & feature variables
         self.X = self.data.drop("creditability", axis=1)
         self.y = self.data["creditability"]
 
-        # Remove statistically insignificant columns from df
-        self.statistic_significance_test()
-        self.X = self.data
+        # Resampling using SMOTE to balance the dataset
+        smote = SMOTE(sampling_strategy='auto', random_state=42)
+        self.X, self.y = smote.fit_resample(self.X, self.y)
+
+        self.data = pd.concat([self.X, self.y], axis=1)
 
     def preprocess_adult(self):
+
+        #Load data
+        self.data = pd.read_csv(self.url, header=None, delimiter=',')
+        self.data = self.data.map(lambda x: x.strip() if isinstance(x, str) else x)
+
         # Rename the columns
         column_names = [
             "age", "workclass", "fnlwgt", "education", "education-num", "marital-status",
@@ -65,64 +77,45 @@ class Dataset:
         self.data.dropna(inplace=True)
 
         # Check unique values in 'income' for any unexpected values
-        self.data['income'] = self.data['income'].map({'<=50K': 1, '>50K': 0})
+        self.data['income'] = self.data['income'].map({'<=50K': 0, '>50K': 1})
 
         # Encode categorical variables using one-hot encoding
         categorical_cols = [
             "workclass", "education", "marital-status", "occupation",
             "relationship", "race", "sex", "native-country"
         ]
-
         self.data = pd.get_dummies(self.data, columns=categorical_cols, drop_first=True)
 
         # Assign target & feature variables
         self.X = self.data.drop("income", axis=1)
         self.y = self.data["income"]
 
-        # Remove statistically insignificant columns from df
-        self.statistic_significance_test()
+        # Resampling using SMOTE to balance the dataset
+        smote = SMOTE(sampling_strategy='auto', random_state=42)
+        self.X, self.y = smote.fit_resample(self.X, self.y)
 
-        self.X = self.data
+        self.data = pd.concat([self.X, self.y], axis=1)
 
-    def preprocess_communities_and_crime(self):
-        # Read data into dataframe
-        self.data = pd.read_csv("http://archive.ics.uci.edu/ml/machine-learning-databases/communities/communities.data",
-                                header=None, na_values=["?"])
-        # Read column names
-        with urlopen("http://archive.ics.uci.edu/ml/machine-learning-databases/communities/communities.names") as names:
-            columns = [line.split(b' ')[1].decode("utf-8") for line in names if line.startswith(b'@attribute')]
-        self.data.columns = columns
+    def preprocess_compass(self):
+        # Load data
+        self.data = pd.read_csv(self.url, header=0, delimiter=',')
 
-        # Drop columns with NaN values
-        self.data = self.data.dropna(axis=1)
+        # Filter the dataset to only include the specified columns
+        columns_to_keep = ['sex', 'age', 'race', 'juv_fel_count', 'juv_misd_count',
+                           'juv_other_count', 'priors_count', 'c_charge_degree',
+                           'two_year_recid']
+        self.data = self.data[columns_to_keep]
 
-        # Exclude first 3 columns
-        self.data = self.data.iloc[:, 3:]
+        # One-hot encode categorical columns
+        categorical_cols = ["sex", "race", "c_charge_degree"]
+        self.data = pd.get_dummies(self.data, columns=categorical_cols, drop_first=True)
 
-        # Drop non-predictive fields
-        non_predictive = ['state', 'county', 'community', 'communityname', 'fold']
-        self.data.drop(columns=non_predictive, inplace=True, errors='ignore')
+        # Assign target & feature variables
+        self.X = self.data.drop("two_year_recid", axis=1)
+        self.y = self.data["two_year_recid"]
 
-        # Thresholding based on 70th percentile
-        threshold_value = self.data['ViolentCrimesPerPop'].quantile(0.7)
-        self.data['ViolentCrimesPerPop'] = self.data['ViolentCrimesPerPop'].apply(
-            lambda x: 0 if x > threshold_value else 1)
+        # Resampling using SMOTE to balance the dataset
+        smote = SMOTE(sampling_strategy='auto', random_state=42)
+        self.X, self.y = smote.fit_resample(self.X, self.y)
 
-        # Set target & features
-        self.y = self.data['ViolentCrimesPerPop']
-        self.X = self.data.drop(columns='ViolentCrimesPerPop')
-
-        # Remove statistically insignificant columns from df
-        self.statistic_significance_test()
-
-        self.X = self.data
-
-    def statistic_significance_test(self):
-        # Perform a chi-squared test to identify statistically significant features
-        chi2_scores = chi2(self.X, self.y)
-        p_values = chi2_scores[1]
-
-        # Drop features with p-values greater than 0.05
-        significant_features = self.X.columns[p_values < 0.05]
-
-        self.data = self.data[significant_features]
+        self.data = pd.concat([self.X, self.y], axis=1)

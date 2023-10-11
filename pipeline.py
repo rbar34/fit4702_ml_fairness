@@ -4,7 +4,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 import dataset
 import tensorflow as tf
 from tensorflow import keras
@@ -15,7 +15,7 @@ from joblib import dump
 
 
 class BaseModelPipeline:
-    def __init__(self, data_url, model, test_size=0.2, random_state=42):
+    def __init__(self, data_url, model, test_size=0.2, random_state=42,scale_data=True):
         self.data_url = data_url
         self.data = None
         self.X = None
@@ -30,6 +30,7 @@ class BaseModelPipeline:
         self.y_pred_train = None
         self.y_pred_test = None
         self.scaler = StandardScaler()
+        self.scale_data = scale_data
 
     def load_and_preprocess_data(self):
         """
@@ -45,14 +46,17 @@ class BaseModelPipeline:
         """
             Split the data set into train & test sets
         """
-
+        # Split the train and test set
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y,
                                                                                 test_size=self.test_size,
                                                                                 random_state=self.random_state)
-        # Save original indices of X_test so it doesn't print scaled results
-        self.X_test_indices = self.X_test.index
-        self.X_train = self.scaler.fit_transform(self.X_train)
-        self.X_test = self.scaler.transform(self.X_test)
+
+        self.X_test_indices = self.X_test.index  # Save original indices of X_test so it doesn't print scaled results
+
+        # Scale the data (enabled by default)
+        if self.scale_data:
+            self.X_train = self.scaler.fit_transform(self.X_train)
+            self.X_test = self.scaler.transform(self.X_test)
 
     def train_model(self):
         self.model.fit(self.X_train, self.y_train)
@@ -73,15 +77,19 @@ class BaseModelPipeline:
         test_precision = precision_score(self.y_test, self.y_pred_test)
         train_f1_score = f1_score(self.y_train, self.y_pred_train)
         test_f1_score = f1_score(self.y_test, self.y_pred_test)
+        train_roc_auc = roc_auc_score(self.y_train, self.y_pred_train)
+        test_roc_auc = roc_auc_score(self.y_test, self.y_pred_test)
         return {
             'Train Accuracy': train_accuracy,
             'Train Recall': train_recall,
             'Train Precision': train_precision,
             'Train F1 Score': train_f1_score,
+            'Train ROC AUC': train_roc_auc,
             'Test Accuracy': test_accuracy,
             'Test Recall': test_recall,
             'Test Precision': test_precision,
-            'Test F1 Score': test_f1_score
+            'Test F1 Score': test_f1_score,
+            'Test ROC AUC': test_roc_auc
         }
 
     def run_pipeline(self):
@@ -158,7 +166,7 @@ class RandomForestPipeline(BaseModelPipeline):
 
 
 class SVMPipeline(BaseModelPipeline):
-    def __init__(self, data_url, C=0.5, test_size=0.2, random_state=42):
+    def __init__(self, data_url, C=0.3, test_size=0.2, random_state=42):
         super().__init__(data_url, SVC(C=C), test_size, random_state)
 
 
@@ -186,7 +194,7 @@ class NeuralNetworkPipeline(BaseModelPipeline):
         return model
 
     def train_model(self):
-        self.model.fit(self.X_train, self.y_train, epochs=10,
+        self.model.fit(self.X_train, self.y_train, epochs=5,
                        batch_size=32, validation_split=0.2)
 
     def make_predictions(self):
