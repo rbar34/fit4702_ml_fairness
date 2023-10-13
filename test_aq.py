@@ -19,7 +19,31 @@ for destination, predictions in PATHS.items():
     for prediction_file in prediction_files:
         print(prediction_file)
 
+        if 'german' in prediction_file:
+            sensitive_attribute = 'personal_status_sex_'
+            separator = 'A'
+            default_category = {sensitive_attribute: '99'}
+        elif 'adult' in prediction_file:
+            sensitive_attribute = 'sex'
+            separator = '_'
+            default_category = {sensitive_attribute: 'Female'}
+        elif 'compas' in prediction_file:
+            sensitive_attribute = 'sex'
+            separator = '_'
+            default_category = {sensitive_attribute: 'Female'}
+
         df = pd.read_csv(prediction_file)
+
+        sensitive_attribute_indexes = df.columns.to_series().str.contains(sensitive_attribute)
+
+        dummy_columns = pd.DataFrame(df.loc[:, sensitive_attribute_indexes])
+
+        undummied = pd.from_dummies(
+            data=dummy_columns, sep=separator, default_category=default_category)
+
+        # remove dummy columns and replace with undummied column
+        df.drop(columns=df.columns[sensitive_attribute_indexes])
+        df.loc[:, sensitive_attribute] = undummied
 
         # rename columns to work properly with AEQUITAS
         df.rename(columns={'Predicted_Labels': 'score',
@@ -32,7 +56,8 @@ for destination, predictions in PATHS.items():
         g = Group()
         xtab, _ = g.get_crosstabs(df)
         absolute_metrics = g.list_absolute_metrics(xtab)
-        categorisations = xtab[[col for col in xtab.columns if col not in absolute_metrics]]
+        categorisations = xtab[[
+            col for col in xtab.columns if col not in absolute_metrics]]
         print(categorisations.to_string())
 
         absolute_metrics_per_population_group = xtab[[
