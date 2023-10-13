@@ -4,5 +4,6 @@ aequitas/
 models/
 predictions/
 generated_tests/
+total_tests/
 random_generated_group_fairness/
 .idea
