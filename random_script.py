@@ -50,10 +50,11 @@ class RandomTestMethod:
         # get a random invidual from the data
         individual_a = data_frame.iloc[np.random.randint(data_frame.shape[0])]
         individual_b = individual_a.copy()
+        # TODO: fix to support 1-hot encoding
         individual_b[sensitive_attribute] = not individual_b[sensitive_attribute]
 
         # Remove prediction and label columns before predicting
-        test_b = individual_b.iloc[:-2]
+        test_b = individual_b.iloc[:-3]
         test_b = np.asarray(test_b).astype('float32')
         test_b = np.reshape(test_b, (1, -1))
         individual_b[target_variable] = self.model.predict_wrapper(test_b)

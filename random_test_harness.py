@@ -23,6 +23,8 @@ for file_base_name in file_base_names:
         sensitive_attribute = 'personal_status_sex_A92'
     elif 'adult' in model_file.name:
         sensitive_attribute = 'sex_Male'
+    elif 'compas' in model_file.name:
+        sensitive_attribute = 'sex_Male'
 
     print(f'\n{model_file}\n')
 
