@@ -32,6 +32,8 @@ for destination, predictions in PATHS.items():
         g = Group()
         xtab, _ = g.get_crosstabs(df)
         absolute_metrics = g.list_absolute_metrics(xtab)
+        categorisations = xtab[[col for col in xtab.columns if col not in absolute_metrics]]
+        print(categorisations.to_string())
 
         absolute_metrics_per_population_group = xtab[[
             'attribute_name', 'attribute_value'] + absolute_metrics].round(2)

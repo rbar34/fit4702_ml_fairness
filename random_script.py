@@ -42,7 +42,7 @@ class RandomTestMethod:
             if (not metric(individual_a, individual_b, target_variable)):
                 tests_failed += 1
                 # record failed cases
-                self.failed_cases += [individual_a, individual_b]
+                self.failed_cases += [individual_a]
             tests_ran += 1
         return tests_failed
 
