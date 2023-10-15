@@ -4,6 +4,7 @@ from pathlib import Path
 MODEL_DIRECTORY = r'models/'
 PREDICTION_DIRECTORY = r'predictions/'
 GENERATED_TESTS_DIRECTORY = r'generated_tests/'
+NUMBER_OF_REPEATS = 5
 
 file_base_names = []
 model_file = Path(MODEL_DIRECTORY)
@@ -18,13 +19,14 @@ for file_base_name in file_base_names:
         f'{GENERATED_TESTS_DIRECTORY}{file_base_name}.csv')
 
     sensitive_attribute = None
+    categoical_attributes = None
 
     if 'german' in model_file.name:
-        sensitive_attribute = 'personal_status_sex_A92'
+        sensitive_attribute = 'sex'
     elif 'adult' in model_file.name:
-        sensitive_attribute = 'sex_Male'
+        sensitive_attribute = 'sex'
     elif 'compas' in model_file.name:
-        sensitive_attribute = 'sex_Male'
+        sensitive_attribute = 'sex'
 
     print(f'\n{model_file}\n')
 

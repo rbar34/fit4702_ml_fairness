@@ -17,19 +17,30 @@ for file_base_name in file_base_names:
     generated_tests_file = Path(
         f'{TOTAL_TEST_DIRECTORY}{file_base_name}.csv')
 
-    sensitive_attribute = None
+    categorical_attributes = None
 
     if 'german' in model_file.name:
-        sensitive_attribute = 'personal_status_sex_A92'
+        sensitive_attribute = 'sex'
+        categorical_attributes = [
+            "checking_status", "credit_history", "purpose", "savings_status",
+            "employment_duration", "other_debtors", "property",
+            "other_installment_plans", "housing", "job", "phone",
+            "foreign_worker"]
     elif 'adult' in model_file.name:
-        sensitive_attribute = 'sex_Male'
-
+        sensitive_attribute = 'sex'
+        categorical_attributes = [
+            "workclass", "education", "marital-status", "occupation",
+            "relationship", "race", "native-country"]
+    elif 'compas' in model_file.name:
+        sensitive_attribute = 'sex'
+        categorical_attributes = ["race", "c_charge_degree"]
     print(f'\n{model_file}\n')
 
     total_test = TotalTestMethod(
         predictions_file_path=prediction_file,
         model_file_path=model_file,
         sensitive_attribute=sensitive_attribute,
+        predictive_attributes=categorical_attributes,
         target_variable='Predicted_Labels')
 
     total_test.run_total_tests()
