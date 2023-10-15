@@ -33,32 +33,43 @@ class RandomTestMethod:
         # write to file
         result_df.to_csv(filepath, index=False)
 
-    def random_test(self, data_frame, sensitive_attribute, target_variable, model, metric, threshold):
-        tests_ran, tests_failed = 0, 0
-        while (tests_ran < threshold):
-            individual_a, individual_b = self.generate_individuals(
-                data_frame, sensitive_attribute, target_variable)
+    def random_test(self, data_frame, sensitive_attribute, target_variable, model, metric):
+        tests_failed = 0
+        for _ in range(TESTS_TO_RUN):
+            # get a random invidual from the data
+            individual_a = data_frame.iloc[np.random.randint(
+                data_frame.shape[0])]
+            individual_b = self.permute_dummy_encoded_attribute(
+                individual_a, self.sensitive_attribute)
 
-            if (not metric(individual_a, individual_b, target_variable)):
+            metric_failed = self.test_individuals_against_metric(
+                individual_a, individual_b, metric)
+
+            if (metric_failed):
                 tests_failed += 1
                 # record failed cases
                 self.failed_cases += [individual_a]
-            tests_ran += 1
         return tests_failed
 
-    def generate_individuals(self, data_frame, sensitive_attribute, target_variable):
-        # get a random invidual from the data
-        individual_a = data_frame.iloc[np.random.randint(data_frame.shape[0])]
-        individual_b = individual_a.copy()
-        # TODO: fix to support 1-hot encoding
-        individual_b[sensitive_attribute] = not individual_b[sensitive_attribute]
-
+    def test_individuals_against_metric(self, individual_a, individual_b, metric):
         # Remove prediction and label columns before predicting
         test_b = individual_b.iloc[:-3]
         test_b = np.asarray(test_b).astype('float32')
         test_b = np.reshape(test_b, (1, -1))
-        individual_b[target_variable] = self.model.predict_wrapper(test_b)
-        return individual_a, individual_b
+        individual_b[self.target_variable] = self.model.predict_wrapper(test_b)
+
+        return (not metric(individual_a, individual_b, self.target_variable))
+
+    def permute_dummy_encoded_attribute(self, individual_a, attribute):
+        individual_b = individual_a.copy()
+
+        attribute_indices = individual_b.index.to_series().str.contains(attribute)
+        dummy_columns = individual_b.index[attribute_indices]
+        permuted_columns = [0] * len(dummy_columns)
+        permuted_columns[np.random.randint(len(dummy_columns))] = 1
+        individual_b[dummy_columns] = permuted_columns
+
+        return individual_b
 
     def fairness_through_awareness(individual_a, individual_b, target_variable):
         return individual_a[target_variable] == individual_b[target_variable]
@@ -69,6 +80,5 @@ class RandomTestMethod:
                                    sensitive_attribute=self.sensitive_attribute,
                                    target_variable=self.target_variable,
                                    model=self.model,
-                                   metric=RandomTestMethod.fairness_through_awareness,
-                                   threshold=TESTS_TO_RUN)
+                                   metric=RandomTestMethod.fairness_through_awareness)
         print(f'failed cases out of {TESTS_TO_RUN}: {results}')

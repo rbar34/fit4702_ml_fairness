@@ -42,7 +42,7 @@ for destination, predictions in PATHS.items():
             data=dummy_columns, sep=separator, default_category=default_category)
 
         # remove dummy columns and replace with undummied column
-        df.drop(columns=df.columns[sensitive_attribute_indexes])
+        df.drop(columns=df.columns[sensitive_attribute_indexes], inplace=True)
         df.loc[:, sensitive_attribute] = undummied
 
         # rename columns to work properly with AEQUITAS
