@@ -4,10 +4,8 @@ from aequitas.preprocessing import preprocess_input_df
 from glob import glob
 from pathlib import Path
 
-# IMPORTANT: Run harness.py and random_test_harness.py first to generate csv test results
-
 PATHS = {
-    "aequitas": r'./predictions/*.csv',
+    "aequitas": r'./total_tests/*.csv',
     "random_generated_group_fairness": r'./generated_tests/*.csv'
 }
 
