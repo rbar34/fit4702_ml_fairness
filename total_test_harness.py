@@ -4,7 +4,7 @@ from pathlib import Path
 MODEL_DIRECTORY = r'models/'
 PREDICTION_DIRECTORY = r'predictions/'
 TOTAL_TEST_DIRECTORY = r'total_tests/'
-NUMBER_OF_REPEATS = 5
+NUMBER_OF_REPEATS = 1
 
 file_base_names = []
 model_file = Path(MODEL_DIRECTORY)
@@ -36,7 +36,8 @@ for i in range(NUMBER_OF_REPEATS):
         elif 'compas' in model_file.name:
             sensitive_attribute = 'sex'
             categorical_attributes = ["race", "c_charge_degree"]
-        print(f'\n{model_file}\n')
+
+        print(f'\nmodel file: {model_file}, repeat:{i}\n')
 
         total_test = TotalTestMethod(
             predictions_file_path=prediction_file,
