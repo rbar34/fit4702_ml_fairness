@@ -4,7 +4,7 @@ from pathlib import Path
 MODEL_DIRECTORY = r'models/'
 PREDICTION_DIRECTORY = r'predictions/'
 GENERATED_TESTS_DIRECTORY = r'generated_tests/'
-NUMBER_OF_REPEATS = 5
+NUMBER_OF_REPEATS = 1
 
 file_base_names = []
 model_file = Path(MODEL_DIRECTORY)
@@ -29,7 +29,7 @@ for i in range(NUMBER_OF_REPEATS):
         elif 'compas' in model_file.name:
             sensitive_attribute = 'sex'
 
-        print(f'\n{model_file}\n')
+        print(f'\nmodel file: {model_file}, repeat:{i}\n')
 
         random_test = RandomTestMethod(
             predictions_file_path=prediction_file,

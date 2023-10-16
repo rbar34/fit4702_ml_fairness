@@ -68,7 +68,9 @@ class TotalTestMethod:
         attribute_indices = individual_b.index.to_series().str.contains(attribute)
         dummy_columns = individual_b.index[attribute_indices]
         permuted_columns = [0] * len(dummy_columns)
-        permuted_columns[np.random.randint(len(dummy_columns))] = 1
+        random_index = np.random.randint(len(dummy_columns) + 1)
+        if random_index < len(dummy_columns):
+            permuted_columns[random_index] = 1
         individual_b[dummy_columns] = permuted_columns
 
         return individual_b
