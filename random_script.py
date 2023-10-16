@@ -18,6 +18,7 @@ class RandomTestMethod:
         self.sensitive_attribute = sensitive_attribute
         self.target_variable = target_variable
         self.failed_cases = []
+        self.classifications = []
 
     def load_prediction_model_pair(self):
         self.model = load(self.model_file_path)
@@ -56,7 +57,9 @@ class RandomTestMethod:
         test_b = individual_b.iloc[:-3]
         test_b = np.asarray(test_b).astype('float32')
         test_b = np.reshape(test_b, (1, -1))
-        individual_b[self.target_variable] = self.model.predict_wrapper(test_b)
+        classification = self.model.predict_wrapper(test_b)
+        individual_b[self.target_variable] = classification
+        self.classifications.append(classification)
 
         return (not metric(individual_a, individual_b, self.target_variable))
 
@@ -65,15 +68,12 @@ class RandomTestMethod:
 
         attribute_indices = individual_b.index.to_series().str.contains(attribute)
         dummy_columns = individual_b.index[attribute_indices]
-        print(dummy_columns)
         permuted_columns = [0] * len(dummy_columns)
         random_index = np.random.randint(len(dummy_columns) + 1)
         if random_index < len(dummy_columns):
             permuted_columns[random_index] = 1
         individual_b[dummy_columns] = permuted_columns
 
-        return individual_b
-        individual_b = individual_a.copy()
         return individual_b
 
     def fairness_through_awareness(individual_a, individual_b, target_variable):

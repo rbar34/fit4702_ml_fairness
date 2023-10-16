@@ -5,7 +5,7 @@ from glob import glob
 from pathlib import Path
 
 PATHS = {
-    "aequitas": r'./total_tests/*.csv',
+    #"aequitas": r'./total_tests/*.csv',
     "random_generated_group_fairness": r'./generated_tests/*.csv'
 }
 
