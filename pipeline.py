@@ -109,7 +109,7 @@ class BaseModelPipeline:
             Serialise model and save to filesystem
         """
 
-        model_wrapper = ModelWrapper(self.model)
+        model_wrapper = ModelWrapper(self.model, self.scaler)
 
         # ensure directory exists
         filepath = Path(filename)
@@ -205,7 +205,7 @@ class NeuralNetworkPipeline(BaseModelPipeline):
 
     def save_model(self, filename):
 
-        model_wrapper = NNModelWrapper(self.model)
+        model_wrapper = NNModelWrapper(self.model, self.scaler)
 
         # ensure directory exists
         filepath = Path(filename)
@@ -216,13 +216,16 @@ class NeuralNetworkPipeline(BaseModelPipeline):
 
 
 class ModelWrapper:
-    def __init__(self, model):
+    def __init__(self, model, scalar):
         self.model = model
+        self.scaler = scalar 
 
     def predict_wrapper(self, X):
+        X = self.scaler.transform(X)
         return self.model.predict(X)
 
 
 class NNModelWrapper(ModelWrapper):
     def predict_wrapper(self, X):
+        X = self.scaler.transform(X)
         return (self.model.predict(X).flatten() > 0.5).astype(int)
