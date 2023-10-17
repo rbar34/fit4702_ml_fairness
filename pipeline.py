@@ -55,8 +55,8 @@ class BaseModelPipeline:
 
         # Scale the data (enabled by default)
         if self.scale_data:
-            self.X_train = self.scaler.fit_transform(self.X_train)
-            self.X_test = self.scaler.transform(self.X_test)
+            self.X_train = self.scaler.fit_transform(self.X_train.values)
+            self.X_test = self.scaler.transform(self.X_test.values)
 
     def train_model(self):
         self.model.fit(self.X_train, self.y_train)
