@@ -228,4 +228,4 @@ class ModelWrapper:
 class NNModelWrapper(ModelWrapper):
     def predict_wrapper(self, X):
         X = self.scaler.transform(X)
-        return (self.model.predict(X).flatten() > 0.5).astype(int)
+        return (self.model.predict(X, verbose=0).flatten() > 0.5).astype(int)
