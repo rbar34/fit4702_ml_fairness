@@ -17,7 +17,7 @@ for i in range(NUMBER_OF_REPEATS):
             f'{PREDICTION_DIRECTORY}{file_base_name}.csv')
         model_file = Path(f'{MODEL_DIRECTORY}{file_base_name}')
         generated_tests_file = Path(
-            f'{GENERATED_TESTS_DIRECTORY}{file_base_name}_{i}.csv')
+            f'{GENERATED_TESTS_DIRECTORY}{file_base_name}.csv')
 
         sensitive_attribute = None
         categoical_attributes = None
