@@ -36,20 +36,25 @@ class RandomTestMethod:
 
     def random_test(self, data_frame, sensitive_attribute, target_variable, model, metric):
         tests_failed = 0
-        for _ in range(TESTS_TO_RUN):
-            # get a random invidual from the data
-            individual_a = data_frame.iloc[np.random.randint(
-                data_frame.shape[0])]
-            individual_b = self.permute_dummy_encoded_attribute(
-                individual_a, self.sensitive_attribute)
+        sample = data_frame.sample(n=1000, replace=True)
+        sample_X = sample.iloc[:, :-3]
+        sample_X = sample_X.astype(dtype='float32')
+        classifications = self.model.predict_wrapper(sample_X)
+        sample[target_variable] = classifications
+        self.failed_cases = sample
+        # for _ in range(TESTS_TO_RUN):
+        #     individual_a = data_frame.iloc[np.random.randint(
+        #         data_frame.shape[0])]
+        #     individual_b = self.permute_dummy_encoded_attribute(
+        #         individual_a, self.sensitive_attribute)
 
-            metric_failed = self.test_individuals_against_metric(
-                individual_a, individual_b, metric)
+        #     metric_failed = self.test_individuals_against_metric(
+        #         individual_a, individual_b, metric)
 
-            if (metric_failed):
-                tests_failed += 1
-                # record failed cases
-                self.failed_cases += [individual_a]
+        #     if (metric_failed):
+        #         tests_failed += 1
+        #         # record failed cases
+        #         self.failed_cases += [individual_a]
         return tests_failed
 
     def test_individuals_against_metric(self, individual_a, individual_b, metric):
