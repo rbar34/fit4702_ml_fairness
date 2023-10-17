@@ -18,21 +18,25 @@ class TotalTestMethod:
         self.sensitive_attribute = sensitive_attribute
         self.target_variable = target_variable
         self.predictive_attributes = predictive_attributes  # categorical only
+        self.generated_cases = []
         self.failed_cases = {}
 
     def load_prediction_model_pair(self):
         self.model = load(self.model_file_path)
         self.predictions = pd.read_csv(self.predictions_file_path)
 
-    def save_failed_cases_to_csv(self, filename):
-        result_df = pd.DataFrame(self.failed_cases.values())
+    def save_failed_cases_to_csv(self, generated_tests_filename, failed_tests_filename):
+        generated_df = pd.DataFrame(self.generated_cases)
+        failed_df = pd.DataFrame(self.failed_cases.values())
 
         # ensure directory exists
-        filepath = Path(filename)
+        filepath = Path(generated_tests_filename)
         filepath.parent.mkdir(parents=True, exist_ok=True)
+        generated_df.to_csv(filepath, index=False)
 
-        # write to file
-        result_df.to_csv(filepath, index=False)
+        filepath = Path(failed_tests_filename)
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        failed_df.to_csv(filepath, index=False)
 
     def total_test(self, data_frame, metric):
         tests_failed = 0
@@ -45,6 +49,8 @@ class TotalTestMethod:
 
             metric_failed = self.test_individuals_against_metric(
                 individual_a, individual_b, metric)
+
+            self.generated_cases += [individual_a]
 
             if metric_failed:
                 # record failed cases

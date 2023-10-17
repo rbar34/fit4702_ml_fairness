@@ -3,7 +3,10 @@ __pycache__/
 aequitas/
 models/
 predictions/
-generated_tests/
-total_tests/
-random_generated_group_fairness/
+failed_tests_directed/
+failed_tests_random/
+generated_tests_directed/
+generated_tests_random/
+group_metrics_directed/
+group_metrics_random/
 .idea

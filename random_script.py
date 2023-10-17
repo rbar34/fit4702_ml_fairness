@@ -17,44 +17,41 @@ class RandomTestMethod:
         self.model = None
         self.sensitive_attribute = sensitive_attribute
         self.target_variable = target_variable
+        self.generated_cases = []
         self.failed_cases = []
-        self.classifications = []
 
     def load_prediction_model_pair(self):
         self.model = load(self.model_file_path)
         self.predictions = pd.read_csv(self.predictions_file_path)
 
-    def save_failed_cases_to_csv(self, filename):
-        result_df = pd.DataFrame(self.failed_cases)
+    def save_failed_cases_to_csv(self, generated_tests_filename, failed_tests_filename):
+        generated_df = pd.DataFrame(self.generated_cases)
+        failed_df = pd.DataFrame(self.failed_cases)
 
         # ensure directory exists
-        filepath = Path(filename)
+        filepath = Path(generated_tests_filename)
         filepath.parent.mkdir(parents=True, exist_ok=True)
+        generated_df.to_csv(filepath, index=False)
 
-        # write to file
-        result_df.to_csv(filepath, index=False)
+        filepath = Path(failed_tests_filename)
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        failed_df.to_csv(filepath, index=False)
 
     def random_test(self, data_frame, sensitive_attribute, target_variable, model, metric):
         tests_failed = 0
-        sample = data_frame.sample(n=1000, replace=True)
-        sample_X = sample.iloc[:, :-3]
-        sample_X = sample_X.astype(dtype='float32')
-        classifications = self.model.predict_wrapper(sample_X)
-        sample[target_variable] = classifications
-        self.failed_cases = sample
-        # for _ in range(TESTS_TO_RUN):
-        #     individual_a = data_frame.iloc[np.random.randint(
-        #         data_frame.shape[0])]
-        #     individual_b = self.permute_dummy_encoded_attribute(
-        #         individual_a, self.sensitive_attribute)
+        for _ in range(TESTS_TO_RUN):
+            individual_a = data_frame.iloc[np.random.randint(
+                data_frame.shape[0])]
+            individual_b = self.permute_dummy_encoded_attribute(
+                individual_a, self.sensitive_attribute)
 
-        #     metric_failed = self.test_individuals_against_metric(
-        #         individual_a, individual_b, metric)
+            metric_failed = self.test_individuals_against_metric(
+                individual_a, individual_b, metric)
 
-        #     if (metric_failed):
-        #         tests_failed += 1
-        #         # record failed cases
-        #         self.failed_cases += [individual_a]
+            if (metric_failed):
+                tests_failed += 1
+                self.failed_cases += [individual_a]
+            self.generated_cases += [individual_a]
         return tests_failed
 
     def test_individuals_against_metric(self, individual_a, individual_b, metric):
@@ -64,7 +61,6 @@ class RandomTestMethod:
         test_b = np.reshape(test_b, (1, -1))
         classification = self.model.predict_wrapper(test_b)
         individual_b[self.target_variable] = classification
-        self.classifications.append(classification)
 
         return (not metric(individual_a, individual_b, self.target_variable))
 

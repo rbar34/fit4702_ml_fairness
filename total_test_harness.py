@@ -3,7 +3,8 @@ from pathlib import Path
 
 MODEL_DIRECTORY = r'models/'
 PREDICTION_DIRECTORY = r'predictions/'
-TOTAL_TEST_DIRECTORY = r'total_tests/'
+GENERATED_TESTS_DIRECTORY = r'generated_tests_directed/'
+FAILED_TESTS_DIRECTORY = r'failed_tests_directed/'
 NUMBER_OF_REPEATS = 1
 
 file_base_names = []
@@ -17,7 +18,9 @@ for i in range(NUMBER_OF_REPEATS):
             f'{PREDICTION_DIRECTORY}{file_base_name}.csv')
         model_file = Path(f'{MODEL_DIRECTORY}{file_base_name}')
         generated_tests_file = Path(
-            f'{TOTAL_TEST_DIRECTORY}{file_base_name}_{i}.csv')
+            f'{GENERATED_TESTS_DIRECTORY}{file_base_name}.csv')
+        failed_tests_file = Path(
+            f'{FAILED_TESTS_DIRECTORY}{file_base_name}.csv')
 
         categorical_attributes = None
 
@@ -47,4 +50,4 @@ for i in range(NUMBER_OF_REPEATS):
             target_variable='Predicted_Labels')
 
         total_test.run_total_tests()
-        total_test.save_failed_cases_to_csv(generated_tests_file)
+        total_test.save_failed_cases_to_csv(generated_tests_file, failed_tests_file)
