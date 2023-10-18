@@ -147,7 +147,7 @@ class BaseModelPipeline:
 
 
 class RandomForestPipeline(BaseModelPipeline):
-    def __init__(self, data_url, test_size=0.2, random_state=42):
+    def __init__(self, data_url, test_size=0.3, random_state=42):
         super().__init__(
             data_url,
             RandomForestClassifier(
@@ -166,18 +166,18 @@ class RandomForestPipeline(BaseModelPipeline):
 
 
 class SVMPipeline(BaseModelPipeline):
-    def __init__(self, data_url, C=0.3, test_size=0.2, random_state=42):
+    def __init__(self, data_url, C=0.3, test_size=0.3, random_state=42):
         super().__init__(data_url, SVC(C=C), test_size, random_state)
 
 
 class LogisticPipeline(BaseModelPipeline):
-    def __init__(self, data_url, test_size=0.2, random_state=42):
+    def __init__(self, data_url, test_size=0.3, random_state=42):
         super().__init__(data_url, LogisticRegression(
             max_iter=1000), test_size, random_state)
 
 
 class NeuralNetworkPipeline(BaseModelPipeline):
-    def __init__(self, data_url, test_size=0.2, random_state=42):
+    def __init__(self, data_url, test_size=0.3, random_state=42):
         model = self.build_default_model()
         super().__init__(data_url, model, test_size, random_state)
 

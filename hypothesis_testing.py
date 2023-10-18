@@ -46,18 +46,18 @@ for dataset, sensitive_attribute in SENSITIVE_ATTRIBUTES.items():
 # RQ2: Spearman rho testing
 for dataset, sensitive_attribute in SENSITIVE_ATTRIBUTES.items():
     group_files = filter(lambda filename: dataset in filename, file_base_names)
+    min_max_differences = []
+    print(dataset)
     for group_file in group_files:
-        print(test_approach, dataset)
-        min_max_differences = []
         for test_approach, directory in DIRECTORIES['group'].items():
-            random_dataframe = pd.read_csv(Path(f"{directory}{group_file}"))
+            dataframe = pd.read_csv(Path(f"{directory}{group_file}"))
             # select the sensitive attributes
             raw_data = dataframe.loc[dataframe['attribute_name'] == sensitive_attribute, GROUP_METRICS]
             min_max_differences.append(raw_data.max() - raw_data.min())
-        aggregated_metrics = pd.DataFrame(min_max_differences)
-        # Spearman rho test
-        # for each metric: random vs directed
-        print(aggregated_metrics)
+    aggregated_metrics = pd.DataFrame(min_max_differences)
+    # Spearman rho test
+    # for each metric: random vs directed
+    print(aggregated_metrics)
 
 # calculate the individual test metrics from a) the naive random, b) the directed approach
 
