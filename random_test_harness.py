@@ -5,7 +5,7 @@ MODEL_DIRECTORY = r'models/'
 PREDICTION_DIRECTORY = r'predictions/'
 GENERATED_TESTS_DIRECTORY = r'generated_tests_random/'
 FAILED_TESTS_DIRECTORY = r'failed_tests_random/'
-NUMBER_OF_REPEATS = 1
+NUMBER_OF_REPEATS = 5
 
 file_base_names = []
 model_file = Path(MODEL_DIRECTORY)
@@ -18,9 +18,9 @@ for i in range(NUMBER_OF_REPEATS):
             f'{PREDICTION_DIRECTORY}{file_base_name}.csv')
         model_file = Path(f'{MODEL_DIRECTORY}{file_base_name}')
         generated_tests_file = Path(
-            f'{GENERATED_TESTS_DIRECTORY}{file_base_name}.csv')
+            f'{GENERATED_TESTS_DIRECTORY}{file_base_name}_{i}.csv')
         failed_tests_file = Path(
-            f'{FAILED_TESTS_DIRECTORY}{file_base_name}.csv')
+            f'{FAILED_TESTS_DIRECTORY}{file_base_name}_{i}.csv')
 
         sensitive_attribute = None
         categoical_attributes = None
