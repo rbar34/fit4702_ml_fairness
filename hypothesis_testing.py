@@ -80,24 +80,33 @@ print('\nRQ2')
 print('-'*10)
 # RQ2: Spearman rho testing
 for dataset, sensitive_attribute in SENSITIVE_ATTRIBUTES.items():
-    correlations_df = pd.DataFrame(columns=GROUP_METRICS, index=GROUP_METRICS)
-    p_values_df = pd.DataFrame(columns=GROUP_METRICS, index=GROUP_METRICS)
-    group_files = filter(lambda filename: dataset in filename, file_base_names)
+    correlations_df = pd.DataFrame(columns=ALL_METRICS, index=ALL_METRICS)
+    p_values_df = pd.DataFrame(columns=ALL_METRICS, index=ALL_METRICS)
+    files = filter(lambda filename: dataset in filename, file_base_names)
     min_max_differences = []
+    ratio_failed_cases = []
     print(f'\n{dataset}')
-    for group_file in group_files:
-        for test_approach, directory in SOURCES['group'].items():
-            dataframe = pd.read_csv(Path(f"{directory}{group_file}"))
+    for file in files:
+        for group_directory, individual_directory in zip(SOURCES['group'].values(), SOURCES['individual'].values()):
+            dataframe = pd.read_csv(Path(f"{group_directory}{file}"))
             # select the sensitive attributes
             raw_data = dataframe.loc[dataframe['attribute_name']
                                      == sensitive_attribute, GROUP_METRICS]
             min_max_differences.append(raw_data.max() - raw_data.min())
+
+            # add individual fairness
+            # get the number of lines
+            with open(f'{individual_directory}{file}', "r") as f:
+                failed_cases = sum(1 for _ in f)
+            f.close()
+            ratio_failed_cases.append((failed_cases - 1)/TESTS_RUN)
     aggregated_metrics = pd.DataFrame(min_max_differences)
+    aggregated_metrics["ftu"] = ratio_failed_cases
     # Add fairness through unawareness
     # Spearman rho test
     # for each metric vs each other metric
-    for metric_a in GROUP_METRICS:
-        for metric_b in GROUP_METRICS:
+    for metric_a in ALL_METRICS:
+        for metric_b in ALL_METRICS:
             if metric_a != metric_b:
                 score = spearmanr(
                     aggregated_metrics[metric_a], aggregated_metrics[metric_b])
