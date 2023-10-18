@@ -13,7 +13,7 @@ DIRECTORIES = {
 }
 
 GROUP_METRICS = [
-    'tpr', 'fpr', 'tnr', 'fnr', 'precision',
+    'tpr', 'fpr', 'tnr', 'fnr', 'ppr', 'precision',
 ]
 
 SENSITIVE_ATTRIBUTES = {
@@ -26,10 +26,10 @@ file_base_names = []
 for e in Path(DIRECTORIES['group']['random_group']).iterdir():
     file_base_names.append(e.name)
 
-# RQ1: KS Testing
+# RQ1: KS testing
 for dataset, sensitive_attribute in SENSITIVE_ATTRIBUTES.items():
     for test_approach, directory in DIRECTORIES['group'].items():
-        print(test_approach, dataset)
+        # print(test_approach, dataset)
         # get the files
         group_files = filter(lambda filename: dataset in filename, file_base_names)
         min_max_differences = []
@@ -39,7 +39,23 @@ for dataset, sensitive_attribute in SENSITIVE_ATTRIBUTES.items():
             raw_data = dataframe.loc[dataframe['attribute_name'] == sensitive_attribute, GROUP_METRICS]
             min_max_differences.append(raw_data.max() - raw_data.min())
         aggregated_metrics = pd.DataFrame(min_max_differences)
-        # KS Test
+        # KS test
+        # for each metric: random vs directed
+        # print(aggregated_metrics)
+
+# RQ2: Spearman rho testing
+for dataset, sensitive_attribute in SENSITIVE_ATTRIBUTES.items():
+    group_files = filter(lambda filename: dataset in filename, file_base_names)
+    for group_file in group_files:
+        print(test_approach, dataset)
+        min_max_differences = []
+        for test_approach, directory in DIRECTORIES['group'].items():
+            random_dataframe = pd.read_csv(Path(f"{directory}{group_file}"))
+            # select the sensitive attributes
+            raw_data = dataframe.loc[dataframe['attribute_name'] == sensitive_attribute, GROUP_METRICS]
+            min_max_differences.append(raw_data.max() - raw_data.min())
+        aggregated_metrics = pd.DataFrame(min_max_differences)
+        # Spearman rho test
         # for each metric: random vs directed
         print(aggregated_metrics)
 
