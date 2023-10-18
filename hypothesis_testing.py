@@ -2,6 +2,8 @@ from scipy.stats import spearmanr, wilcoxon
 import pandas as pd
 from pathlib import Path
 
+TESTS_RUN = 1000
+
 SOURCES = {
     "individual": {
         "random_individual": r'./failed_tests_random/',
@@ -14,6 +16,8 @@ SOURCES = {
 GROUP_METRICS = [
     'tpr', 'fpr', 'tnr', 'fnr', 'ppr', 'precision',
 ]
+
+ALL_METRICS = GROUP_METRICS + ['ftu']
 
 SENSITIVE_ATTRIBUTES = {
     'german': 'personal_status_sex_',
@@ -33,28 +37,38 @@ for dataset, sensitive_attribute in SENSITIVE_ATTRIBUTES.items():
         columns=["Wilcoxon", "p_value"], index=GROUP_METRICS)
     print(f'\n{dataset}')
     results = []
-    for test_approach, directory in SOURCES['group'].items():
+    for group_directory, individual_directory in zip(SOURCES['group'].values(), SOURCES['individual'].values()):
         # get the files
-        group_files = filter(
+        files = filter(
             lambda filename: dataset in filename, file_base_names)
         min_max_differences = []
-        for group_file in group_files:
-            dataframe = pd.read_csv(Path(f"{directory}{group_file}"))
+        ratio_failed_cases = []
+        for file in files:
+            dataframe = pd.read_csv(Path(f"{group_directory}{file}"))
             # select the sensitive attributes
             raw_data = dataframe.loc[dataframe['attribute_name']
                                      == sensitive_attribute, GROUP_METRICS]
             min_max_differences.append(raw_data.max() - raw_data.min())
+
+            # add individual fairness
+            # get the number of lines
+            with open(f'{individual_directory}{file}', "r") as f:
+                failed_cases = sum(1 for _ in f)
+            f.close()
+            ratio_failed_cases.append((failed_cases - 1)/TESTS_RUN)
         aggregated_metrics = pd.DataFrame(min_max_differences)
+        aggregated_metrics["ftu"] = ratio_failed_cases
         results.append(aggregated_metrics)
-        # KS test
-        # for each metric: random vs directed
-    for group_metric in GROUP_METRICS:
-        score = wilcoxon(results[0][group_metric], results[1][group_metric])
-        wilcoxon_df.loc[group_metric, "Wilcoxon"] = score.statistic
-        wilcoxon_df.loc[group_metric, "p_value"] = score.pvalue
+
+    # Wilcoxon test
+    # for each metric: random vs directed
+    for metric in ALL_METRICS:
+        score = wilcoxon(results[0][metric], results[1][metric])
+        wilcoxon_df.loc[metric, "Wilcoxon"] = score.statistic
+        wilcoxon_df.loc[metric, "p_value"] = score.pvalue
 
     # ensure directory exists
-    filepath = Path(r'./statistical_results/rq1.csv')
+    filepath = Path(f'./statistical_results/rq1_{dataset}.csv')
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
     # write to file
@@ -79,6 +93,7 @@ for dataset, sensitive_attribute in SENSITIVE_ATTRIBUTES.items():
                                      == sensitive_attribute, GROUP_METRICS]
             min_max_differences.append(raw_data.max() - raw_data.min())
     aggregated_metrics = pd.DataFrame(min_max_differences)
+    # Add fairness through unawareness
     # Spearman rho test
     # for each metric vs each other metric
     for metric_a in GROUP_METRICS:
@@ -90,7 +105,8 @@ for dataset, sensitive_attribute in SENSITIVE_ATTRIBUTES.items():
                 p_values_df.loc[metric_a, metric_b] = score.pvalue
 
     # ensure directory exists
-    correltions_filepath = Path(f'./statistical_results/rq2_{dataset}_correlation.csv')
+    correltions_filepath = Path(
+        f'./statistical_results/rq2_{dataset}_correlation.csv')
     pvalues_filepath = Path(f'./statistical_results/rq2_{dataset}_pvalues.csv')
     correltions_filepath.parent.mkdir(parents=True, exist_ok=True)
     pvalues_filepath.parent.mkdir(parents=True, exist_ok=True)
